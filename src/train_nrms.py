@@ -10,7 +10,8 @@ import torch
 from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
-from pytorch_lightning.metrics.functional import auroc
+from torchmetrics import AUROC
+# from pytorch_lightning.metrics.functional import auroc
 from pytorch_lightning.utilities import move_data_to_device
 from torch.optim import Adam
 from tqdm import tqdm
@@ -36,7 +37,7 @@ class AverageMeterSet:
 class PLModule(pl.LightningModule):
     def __init__(self, hparams: Dict):
         super().__init__()
-        self.hparams = hparams
+        self.save_hyperparameters(hparams)
         self.model = NRMS(
             pretrained_model_name=self.hp.pretrained_model_name,
             sa_pretrained_model_name=self.hp.sa_pretrained_model_name,
@@ -57,6 +58,7 @@ class PLModule(pl.LightningModule):
         loss, y_score = self.model.forward(batch)
         y_true = batch['targets']
         n_processed = batch['batch_cand'].max() + 1
+        auroc = AUROC(task="binary")
 
         for n in range(n_processed):
             mask = batch['batch_cand'] == n
@@ -78,7 +80,7 @@ class PLModule(pl.LightningModule):
     @torch.no_grad()
     def on_validation_epoch_start(self):
         # Pre compute feature of uniq candidates in val to save time.
-        val_dataset = cast(MINDDatasetVal, self.val_dataloader().dataset)
+        val_dataset = cast(MINDDatasetVal, self.trainer.datamodule.val_dataloader().dataset)
 
         if self.total_processed == 0:
             val_dataset.init_dummy_feature_map(self.model.encoder.dim)
@@ -145,13 +147,13 @@ def train(params: Params):
 
     trainer = pl.Trainer(
         max_epochs=params.t.epochs,
-        gpus=params.t.gpus,
+        accelerator=params.accelerator,
         tpu_cores=params.t.num_tpu_cores,
         logger=tb_logger,
         precision=params.t.precision,
         resume_from_checkpoint=params.t.resume_from_checkpoint,
-        weights_save_path=params.t.weights_save_path,
-        checkpoint_callback=params.t.checkpoint_callback,
+        # weights_save_path=params.t.weights_save_path,
+        # checkpoint_callback=params.t.checkpoint_callback,
         callbacks=callbacks,
         deterministic=True,
         benchmark=True,
@@ -162,9 +164,11 @@ def train(params: Params):
     dm = MINDDataModule(params.d)
 
     trainer.fit(net, datamodule=dm)
+    return trainer, net
 
 
 if __name__ == '__main__':
     configure_logging()
-    params = Params.load()
-    train(params)
+    params = Params.load('src/params/main/002.yaml')
+    trainer, net = train(params)
+    torch.save(net.state_dict(), 'model_saved.ckt')

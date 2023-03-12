@@ -1,7 +1,7 @@
-note: 'MIND Large'
+note: 'MIND Demo'
 
 data_params:
-  mind_path: ../data/mind-large
+  mind_path: data/mind-demo
   batch_size: 3
   seed: 1
 
@@ -11,8 +11,7 @@ module_params:
 
 trainer_params:
   epochs: 3
-  precision: 16
   gpus: -1
   val_check_interval: 0.2
-  weights_save_path: /mnt/ssdstuff/akirasosa/experiments
+  weights_save_path: log/experiments/
   accumulate_grad_batches: 4

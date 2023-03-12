@@ -1,6 +1,6 @@
 import dataclasses
 from typing import Optional
-
+import torch
 from libs.params import ParamsMixIn
 
 pretrained_model_name_default = 'distilbert-base-uncased'
@@ -69,6 +69,7 @@ class Params(ParamsMixIn):
     trainer_params: TrainerParams
     data_params: DataParams
     note: str = ''
+    accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"   #  ("mps" if torch.backends.mps.is_available() else "cpu")
 
     @property
     def m(self) -> ModuleParams:
