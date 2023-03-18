@@ -151,7 +151,7 @@ def train(params: Params):
         # tpu_cores=params.t.num_tpu_cores,
         logger=tb_logger,
         precision=params.t.precision,
-        resume_from_checkpoint=params.t.resume_from_checkpoint,
+        # resume_from_checkpoint=params.t.resume_from_checkpoint,
         # weights_save_path=params.t.weights_save_path,
         # checkpoint_callback=params.t.checkpoint_callback,
         callbacks=callbacks,
