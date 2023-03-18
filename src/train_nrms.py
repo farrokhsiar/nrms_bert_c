@@ -148,7 +148,7 @@ def train(params: Params):
     trainer = pl.Trainer(
         max_epochs=params.t.epochs,
         accelerator=params.accelerator,
-        tpu_cores=params.t.num_tpu_cores,
+        # tpu_cores=params.t.num_tpu_cores,
         logger=tb_logger,
         precision=params.t.precision,
         resume_from_checkpoint=params.t.resume_from_checkpoint,
