@@ -4,6 +4,7 @@ from logging import getLogger, FileHandler
 from pathlib import Path
 from time import time
 from typing import Dict, Sequence, Any, cast
+from torcheval.metrics import BinaryAUROC
 
 import pytorch_lightning as pl
 import torch
@@ -58,7 +59,7 @@ class PLModule(pl.LightningModule):
         loss, y_score = self.model.forward(batch)
         y_true = batch['targets']
         n_processed = batch['batch_cand'].max() + 1
-        auroc = AUROC(task="binary")
+        auroc = BinaryAUROC()
 
         for n in range(n_processed):
             mask = batch['batch_cand'] == n
@@ -155,7 +156,7 @@ def train(params: Params):
         # weights_save_path=params.t.weights_save_path,
         # checkpoint_callback=params.t.checkpoint_callback,
         callbacks=callbacks,
-        deterministic=True,
+        # deterministic=True,
         benchmark=True,
         accumulate_grad_batches=params.t.accumulate_grad_batches,
         val_check_interval=params.t.val_check_interval,

@@ -13,6 +13,7 @@ torchmetrics = "*"
 tensorboard = "*"
 tensorboardx = "*"
 pyarrow = "*"
+torcheval = "*"
 
 [dev-packages]
 
