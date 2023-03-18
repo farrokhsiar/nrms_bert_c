@@ -127,3 +127,65 @@ class NRMS(nn.Module):
                 loss = criterion(logits, targets.float())
 
         return loss, logits
+
+    def generate_negative_samples(self, x):
+        #  creates negative samples by randomly selecting indices from the input tensor x.
+        num_samples = x.size(0)
+
+        #  generates a tensor of random integers of shape (num_samples, self.num_negative_samples)
+        #  each integer is in the range [0, num_samples)
+        idx = torch.randint(0, num_samples, (num_samples, self.num_negative_samples), device=x.device)
+
+        # return tensor by indexing the input tensor x with the generated indices
+        return x[idx]
+
+    def forward_neg_sampling(self, inputs: MINDBatch):
+
+        # inputs is a dict with 'x_hist', 'batch_hist', 'x_cand', 'batch_cand', and 'targets'.
+        # 'x_hist' represents historical data
+        # 'x_cand' represents candidate items
+        if is_precomputed(inputs['x_hist']):
+            x_hist = inputs['x_hist']
+        else:
+            x_hist = self.encoder.forward(inputs['x_hist'])
+        x_hist, mask_hist = to_dense_batch(x_hist, inputs['batch_hist'])
+        x_hist = self.self_attn.forward(x_hist, attn_mask=mask_hist)[0]  # DistilBERT
+        x_hist, _ = self.additive_attn(x_hist)
+
+        if is_precomputed(inputs['x_cand']):
+            x_cand = inputs['x_cand']
+        else:
+            x_cand = self.encoder.forward(inputs['x_cand'])
+        x_cand, mask_cand = to_dense_batch(x_cand, inputs['batch_cand'])
+
+        # Generate negative samples
+        # Create negative samples by randomly selecting indices from the input tensor x
+        x_cand_neg = self.generate_negative_samples(x_cand)
+
+        # Concatenate x_cand and x_cand_neg along the first dimension
+        x_cand = torch.cat((x_cand, x_cand_neg), dim=1)
+
+        # Compute the dot product between x_hist and x_cand
+        # x_hist:(batch_size, hist_feature_size) -> after unsqueeze: (batch_size, 1, hist_feature_size)
+        # x_cand: (batch_size, cand_feature_size, num_candidates) -> after permute (batch_size, num_candidates, cand_feature_size)
+        # batch matrix multiplication: hist_feature_size is equal to cand_feature_size, OUTPUT: (batch_size, 1, num_candidates)
+        # squeeze: reduces dimension: (batch_size, num_candidates).
+        logits = torch.bmm(x_hist.unsqueeze(1), x_cand.permute(0, 2, 1)).squeeze(1)
+        # Apply the mask mask_cand to the logits:
+        logits = logits[mask_cand]
+
+        targets = inputs['targets']
+        if targets is None:
+            return logits
+
+        if self.training:
+            criterion = nn.CrossEntropyLoss()
+            # criterion = LabelSmoothingCrossEntropy()
+            loss = criterion(logits.reshape(targets.size(0), -1), targets)
+        else:
+            # In case of val, targets are multi label. It's not comparable with train.
+            with torch.no_grad():
+                criterion = nn.BCEWithLogitsLoss()
+                loss = criterion(logits, targets.float())
+
+        return loss, logits

@@ -1,7 +1,7 @@
 note: 'MIND Demo'
 
 data_params:
-  mind_path: data/mind-demo
+  mind_path: data/mind-small
   batch_size: 3
   seed: 1
 
