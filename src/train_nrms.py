@@ -68,7 +68,7 @@ class PLModule(pl.LightningModule):
             self.am.val_ndcg10.update(ndcg_score(s, t))
         self.am.val_loss.update(loss, n_processed)
 
-    def training_epoch_end(self, outputs: Sequence[Any]):
+    def on_train_epoch_end(self, outputs: Sequence[Any]):
         self.log('train_loss', self.am.train_loss.compute())
 
     @torch.no_grad()
