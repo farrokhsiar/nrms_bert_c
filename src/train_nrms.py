@@ -59,14 +59,14 @@ class PLModule(pl.LightningModule):
         loss, y_score = self.model.forward(batch)
         y_true = batch['targets']
         n_processed = batch['batch_cand'].max() + 1
-        auroc = BinaryAUROC()
+        # auroc = BinaryAUROC()
 
         for n in range(n_processed):
             mask = batch['batch_cand'] == n
             s, t = y_score[mask], y_true[mask]
             s = torch.softmax(s, dim=0)
-            auroc.reset()
-            self.am.val_roc.update(auroc.update(s, t).compute())
+            # auroc.reset()
+            # self.am.val_roc.update(auroc.update(s, t).compute())
             self.am.val_ndcg10.update(ndcg_score(s, t))
         self.am.val_loss.update(loss, n_processed)
 
@@ -76,7 +76,7 @@ class PLModule(pl.LightningModule):
     @torch.no_grad()
     def validation_epoch_end(self, outputs: Sequence[Any]):
         self.log('val_loss', self.am.val_loss.compute())
-        self.log('val_roc', self.am.val_roc.compute())
+        # self.log('val_roc', self.am.val_roc.compute())
         self.log('val_ndcg10', self.am.val_ndcg10.compute())
 
     @torch.no_grad()
@@ -140,7 +140,7 @@ def train(params: Params):
     if params.t.checkpoint_callback:
         callbacks.append(
             ModelCheckpoint(
-                monitor='val_roc',
+                monitor='val_loss',
                 save_last=True,
                 verbose=True,
                 mode='max',
