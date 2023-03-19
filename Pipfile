@@ -5,15 +5,17 @@ name = "pypi"
 
 [packages]
 transformers = "*"
-torch = "*"
+torch = "==1.13.0"
 pandas = "*"
 recommenders = {editable = true, path = "/Users/m0f0a4t/Documents/recommenders"}
-pytorch-lightning = "*"
+pytorch-lightning = "==1.9.3"
 torchmetrics = "*"
 tensorboard = "*"
 tensorboardx = "*"
 pyarrow = "*"
 torcheval = "*"
+dacite = "*"
+OmegaConf = "*"
 
 [dev-packages]
 
