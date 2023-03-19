@@ -65,7 +65,8 @@ class PLModule(pl.LightningModule):
             mask = batch['batch_cand'] == n
             s, t = y_score[mask], y_true[mask]
             s = torch.softmax(s, dim=0)
-            self.am.val_roc.update(auroc(s, t))
+            auroc.reset()
+            self.am.val_roc.update(auroc.update(s, t).compute())
             self.am.val_ndcg10.update(ndcg_score(s, t))
         self.am.val_loss.update(loss, n_processed)
 
